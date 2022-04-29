@@ -3,6 +3,7 @@
 import rospy
 import numpy as np
 import os
+from q_learning.msg import QMatrix, QLearningReward, RobotMoveObjectToTag
 
 # Path of directory on where this file is located
 path_prefix = os.path.dirname(__file__) + "/action_states/"
@@ -44,10 +45,48 @@ class QLearning(object):
         self.states = np.loadtxt(path_prefix + "states.txt")
         self.states = list(map(lambda x: list(map(lambda y: int(y), x)), self.states))
 
+
+        # --------------- Our Code after this point --------------- #
+        # Publish Q Matrix
+        self.particles_pub = rospy.Publisher("/q_learning/q_matrix", QMatrix, queue_size=10)
+
+        # Publish Robot Action
+        self.particles_pub = rospy.Publisher("/q_learning/robot_action", RobotMoveObjectToTag, queue_size=10)
+
+        # subscribe to the reward received from the reward node
+        rospy.Subscriber("/q_learning/reward", QLearningReward, self.q_learning_reward_recieved)
+
+        self.converged = False
+
+        # TODO: Initialize Q Matrix of size 64 (states) x 9 (actions) and publish it
+
+        # TODO: Publish first random action
+
     def save_q_matrix(self):
         # TODO: You'll want to save your q_matrix to a file once it is done to
         # avoid retraining
         return
+
+    def random_action():
+      # TODO : Pick a random action given current state and action matrix
+      return
+
+    def q_learning_reward_recieved(self, reward_msg):
+      
+      print(reward_msg)
+
+      # TODO Update Q Matrix based on Reward, and publish new matrix
+
+      if self.converged:
+        self.save_q_matrix()
+      else:
+        print("Not yet converged")
+
+        # TODO If actions available, take random action and publish
+
+        # TODO Else, reset simulation and take and publish random action
+
+      return
 
 if __name__ == "__main__":
     node = QLearning()

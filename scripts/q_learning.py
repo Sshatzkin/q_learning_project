@@ -69,6 +69,8 @@ class QLearning(object):
         self.n_actions = 9; self.n_states = 64
         self.q_matrix = self.initialize_q_matrix(self.n_states, self.n_actions)
         self.matrix_pub.publish(self.q_matrix)
+        print(self.q_matrix.q_matrix.q_matrix_row)
+        print(type(self.q_matrix.q_matrix.q_matrix_row))
 
         # Sleep before publishing first action to ensure that all subscribers are ready
         rospy.sleep(3)
@@ -103,7 +105,7 @@ class QLearning(object):
         if (len(possible_end_states) == 0): # if no possible actions, return None
           return None, None
         end_state = np.random.choice(possible_end_states)#np.random.randint(low=0, high=(len(possible_actions) - 1))
-        return self.actions[self.action_matrix[self.current_state][end_state]], end_state
+        return self.actions[int(self.action_matrix[self.current_state][end_state])], end_state
 
 
     def check_converged(self, new_q_matrix):

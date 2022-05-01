@@ -66,14 +66,13 @@ class QLearning(object):
         self.n_actions = 9; self.n_states = 64
         self.q_matrix = self.initialize_q_matrix(self.n_states, self.n_actions)
         self.matrix_pub.publish(self.q_matrix)
-        print(self.q_matrix)
 
         # Sleep before publishing first action to ensure that all subscribers are ready
         rospy.sleep(3)
 
         # Publish first random action
         rand_a = self.random_action()
-        #self.action_pub.publish(rand_a)
+        self.action_pub.publish(rand_a)
 
     def initialize_q_matrix(self, states, actions):
         empty_matrix = np.zeros((states, actions))
@@ -97,7 +96,7 @@ class QLearning(object):
         return self.actions[action_num]
 
     def q_learning_reward_recieved(self, reward_msg):
-      
+      print("Recieved a reward message")
       print(reward_msg)
 
       # TODO Update Q Matrix based on Reward, and publish new matrix

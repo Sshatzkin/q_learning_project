@@ -63,8 +63,8 @@ class QLearning(object):
         self.current_state = 0 # current state
 
         # Initialize Q Matrix of size 64 (states) x 9 (actions) and publish it
-        n_actions = 9; n_states = 64
-        self.q_matrix = self.initialize_q_matrix(n_states, n_actions)
+        self.n_actions = 9; self.n_states = 64
+        self.q_matrix = self.initialize_q_matrix(self.n_states, self.n_actions)
         self.matrix_pub.publish(self.q_matrix)
         print(self.q_matrix)
 
@@ -87,9 +87,14 @@ class QLearning(object):
 
     def random_action(self):
         # TODO: Pick a random action given current state and action matrix
-        # TODO: No clue if I coded this right, have to check format of msg
-        i = np.random.randint(low=0, high=(len(self.actions) - 1))
-        return self.actions[i]
+        possible_actions = []
+        for i in range(9):
+          if self.action_matrix[self.current_state][i] != -1:
+            possible_actions.append(i)
+        if (len(possible_actions) == 0): # if no possible actions, return None
+          return None
+        action_num = np.random.choice(possible_actions)#np.random.randint(low=0, high=(len(possible_actions) - 1))
+        return self.actions[action_num]
 
     def q_learning_reward_recieved(self, reward_msg):
       
@@ -110,3 +115,5 @@ class QLearning(object):
 
 if __name__ == "__main__":
     node = QLearning()
+
+    rospy.spin()

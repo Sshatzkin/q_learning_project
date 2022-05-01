@@ -70,8 +70,8 @@ class QLearning(object):
         # Sleep before publishing first action to ensure that all subscribers are ready
         rospy.sleep(3)
 
-        # Publish first random action
-        rand_a = self.random_action()
+        # Take and publish first random action
+        rand_a, self.current_state = self.random_action()
         self.action_pub.publish(rand_a['object'], rand_a['tag'])
 
     def initialize_q_matrix(self, states, actions):
@@ -84,17 +84,21 @@ class QLearning(object):
         # avoid retraining
         return
 
+    # random_action uses the current state and the action matrices to return a random action
+    # that can be taken from the current state, and the new state that the action leads to.
     def random_action(self):
         # TODO: Pick a random action given current state and action matrix
-        possible_actions = []
-        for i in range(9):
+        possible_end_states = []
+        for i in range(self.n_states):
           if self.action_matrix[self.current_state][i] != -1:
-            possible_actions.append(i)
-        if (len(possible_actions) == 0): # if no possible actions, return None
-          return None
-        action_num = np.random.choice(possible_actions)#np.random.randint(low=0, high=(len(possible_actions) - 1))
-        return self.actions[action_num]
+            possible_end_states.append(i)
+        if (len(possible_end_states) == 0): # if no possible actions, return None
+          return None, None
+        end_state = np.random.choice(possible_end_states)#np.random.randint(low=0, high=(len(possible_actions) - 1))
+        return self.actions[self.action_matrix[self.current_state][end_state]], end_state
 
+
+    # Function is called when a reward is received from the reward node
     def q_learning_reward_recieved(self, reward_msg):
       print("Recieved a reward message")
       print(reward_msg)
@@ -106,19 +110,18 @@ class QLearning(object):
       else:
         print("Not yet converged")
 
-        # TODO If actions available, take random action and publish
-        rand_a = self.random_action()
+        rand_a, possible_state = self.random_action()
         if rand_a is not None:
+          self.current_state = possible_state
           self.action_pub.publish(rand_a['object'], rand_a['tag'])
         else:
           print("No possible actions")
-          # TODO Else, reset simulation and take and publish random action
           
           # Reset simulation
           self.current_state = 0
 
           # Publish random action
-          rand_a = self.random_action()
+          rand_a, self.current_state = self.random_action()
           self.action_pub.publish(rand_a['object'], rand_a['tag'])
       return
 

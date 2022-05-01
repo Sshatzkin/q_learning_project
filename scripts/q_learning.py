@@ -49,21 +49,27 @@ class QLearning(object):
 
 
         # --------------- Our Code after this point --------------- #
-        # Publish Q Matrix
+        # Initialize QMatrix publisher
         self.matrix_pub = rospy.Publisher("/q_learning/q_matrix", QMatrix, queue_size=10)
 
-        # Publish Robot Action
+        # Initialize Robot Action Publisher
         self.action_pub = rospy.Publisher("/q_learning/robot_action", RobotMoveObjectToTag, queue_size=10)
 
         # subscribe to the reward received from the reward node
         rospy.Subscriber("/q_learning/reward", QLearningReward, self.q_learning_reward_recieved)
 
-        self.converged = False
+        # Initialize Training Variables
+        self.converged = False # boolean to check if converged
+        self.current_state = 0 # current state
 
         # Initialize Q Matrix of size 64 (states) x 9 (actions) and publish it
         n_actions = 9; n_states = 64
         self.q_matrix = self.initialize_q_matrix(n_states, n_actions)
         self.matrix_pub.publish(self.q_matrix)
+        print(self.q_matrix)
+
+        # Sleep before publishing first action to ensure that all subscribers are ready
+        rospy.sleep(3)
 
         # Publish first random action
         rand_a = self.random_action()

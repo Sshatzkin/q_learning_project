@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from ast import NameConstant
+from turtle import update
 import rospy
 import numpy as np
 import os
@@ -70,9 +71,14 @@ class QLearning(object):
         # Initialize Training Variables
         self.converged = False # boolean to check if converged
         self.current_state = 0 # current state
+        self.last_state = None # last state
+        self.last_action_i = None # last action
         self.convergence_threshold = 0.001 # Similarity between two vals to be considered "the same"
-        self.convergence_max = 1000 # max number of iterations without change before convergence
+        self.convergence_max = 100 # max number of iterations without change before convergence
         self.convergence_counter = 0 # counter for convergence
+
+        self.alpha = 1 # learning rate
+        self.gamma = 0.9 # discount factor
 
         # Initialize Q Matrix of size 64 (states) x 9 (actions) and publish it
         self.n_actions = 9; self.n_states = 64
@@ -84,7 +90,8 @@ class QLearning(object):
         rospy.sleep(3)
 
         # Take and publish first random action
-        rand_a, self.current_state = self.random_action()
+        self.last_state = self.current_state
+        rand_a, self.last_action_i, self.current_state = self.random_action()
         self.action_pub.publish(rand_a['object'], rand_a['tag'])
 
     def initialize_q_matrix(self, states, actions):
@@ -104,28 +111,50 @@ class QLearning(object):
 
     # random_action uses the current state and the action matrices to return a random action
     # that can be taken from the current state, and the new state that the action leads to.
+
+    # Returns 3 things
+    #  1: an action, i.e. {object: "pink", tag: 1}
+    #  2: the index of the action taken
+    #  3: the new state 
     def random_action(self):
-        # TODO: Pick a random action given current state and action matrix
         possible_end_states = []
         for i in range(self.n_states):
           if self.action_matrix[self.current_state][i] != -1:
             possible_end_states.append(i)
         if (len(possible_end_states) == 0): # if no possible actions, return None
-          return None, None
+          return None, None, None
         end_state = np.random.choice(possible_end_states)#np.random.randint(low=0, high=(len(possible_actions) - 1))
-        return self.actions[int(self.action_matrix[self.current_state][end_state])], end_state
+        action_index = int(self.action_matrix[self.current_state][end_state])
+        return self.actions[action_index], action_index, end_state
 
 
-    def check_converged(self, new_q_matrix):
-      for i in range(self.n_states):
-        for j in range(self.n_actions):
-          if (abs(QMatrix_get(self.q_matrix, i, j) - QMatrix_get(new_q_matrix,i,j)) > self.convergence_threshold):
-            self.convergence_counter = 0
-            return False
-      self.convergence_counter += 1
-      if (self.convergence_counter < self.convergence_max):
+    def check_converged(self, updated):
+      #for i in range(self.n_states):
+      #  for j in range(self.n_actions):
+      #    if (abs(QMatrix_get(self.q_matrix, i, j) - QMatrix_get(new_q_matrix,i,j)) > self.convergence_threshold):
+      #      self.convergence_counter = 0
+      #      return False
+      if (updated):
+        self.convergence_counter = 0
         return False
-      return True
+      else:
+        self.convergence_counter += 1
+        if (self.convergence_counter < self.convergence_max):
+          return False
+        return True
+
+    def update_q_matrix(self, reward):
+      max_a_reward = -1
+      for i in range (self.n_actions):
+        if (QMatrix_get(self.q_matrix, self.current_state, i) > max_a_reward):
+          max_a_reward = QMatrix_get(self.q_matrix, self.current_state, i)
+      new_val = QMatrix_get(self.q_matrix, self.last_state, self.last_action_i) + self.alpha * (reward + self.gamma * max_a_reward - QMatrix_get(self.q_matrix, self.last_state, self.last_action_i))
+
+      updated = False
+      if (abs(new_val - QMatrix_get(self.q_matrix, self.last_state, self.last_action_i)) > self.convergence_threshold):
+        updated = True
+      QMatrix_set(self.q_matrix, self.last_state, self.last_action_i, new_val)
+      return updated
 
     # Function is called when a reward is received from the reward node
     def q_learning_reward_recieved(self, reward_msg):
@@ -136,19 +165,17 @@ class QLearning(object):
           print(self.q_matrix)
 
       # TODO Replace this with actual code for updating QMatrix based on reward and previous action
-      new_q_matrix = self.q_matrix
-      if (reward_msg.reward > 1):
-          QMatrix_set(new_q_matrix,0,0,reward_msg.reward)
+      updated_bool = self.update_q_matrix(reward_msg.reward)
           
-      self.check_converged(new_q_matrix)
-      self.q_matrix = new_q_matrix # After checking convergence, update q_matrix
-      print(QMatrix_get(self.q_matrix, 0, 0))
+      self.check_converged(updated_bool)
+
       if self.converged:
         self.save_q_matrix()
+        print(self.q_matrix)
       else:
         print("Not yet converged")
 
-        rand_a, possible_state = self.random_action()
+        rand_a, self.last_action_i, possible_state = self.random_action()
         if rand_a is not None:
           self.current_state = possible_state
           self.action_pub.publish(rand_a['object'], rand_a['tag'])
@@ -159,7 +186,7 @@ class QLearning(object):
           self.current_state = 0
 
           # Publish random action
-          rand_a, self.current_state = self.random_action()
+          rand_a, self.last_action_i, self.current_state = self.random_action()
           self.action_pub.publish(rand_a['object'], rand_a['tag'])
       return
 

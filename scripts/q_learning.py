@@ -72,7 +72,7 @@ class QLearning(object):
 
         # Publish first random action
         rand_a = self.random_action()
-        self.action_pub.publish(rand_a)
+        self.action_pub.publish(rand_a['object'], rand_a['tag'])
 
     def initialize_q_matrix(self, states, actions):
         empty_matrix = np.zeros((states, actions))

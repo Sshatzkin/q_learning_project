@@ -9,6 +9,15 @@ from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTa
 # Path of directory on where this file is located
 path_prefix = os.path.dirname(__file__) + "/action_states/"
 
+
+def QMatrix_get(qmatrix, x, y):
+    return qmatrix.q_matrix[x].q_matrix_row[y]
+
+def QMatrix_set(qmatrix, x, y, val):
+    qmatrix.q_matrix[x].q_matrix_row[y] = val
+    return True
+    
+
 class QLearning(object):
     def __init__(self):
         # Initialize this node
@@ -69,9 +78,8 @@ class QLearning(object):
         self.n_actions = 9; self.n_states = 64
         self.q_matrix = self.initialize_q_matrix(self.n_states, self.n_actions)
         self.matrix_pub.publish(self.q_matrix)
-        print(self.q_matrix.q_matrix.q_matrix_row)
-        print(type(self.q_matrix.q_matrix.q_matrix_row))
-
+        
+        
         # Sleep before publishing first action to ensure that all subscribers are ready
         rospy.sleep(3)
 
@@ -83,7 +91,7 @@ class QLearning(object):
         new_matrix = []
         for i in range(states):
             empty_row = np.zeros(actions)
-            new_matrix.append = QMatrixRow(empty_row)
+            new_matrix.append(QMatrixRow(empty_row))
         q_matrix = QMatrix(q_matrix=new_matrix)
         #empty_matrix = np.zeros((states, actions))
         #q_matrix = QMatrix(q_matrix=QMatrixRow(empty_matrix))
@@ -111,7 +119,7 @@ class QLearning(object):
     def check_converged(self, new_q_matrix):
       for i in range(self.n_states):
         for j in range(self.n_actions):
-          if (abs(self.q_matrix[i][j] - new_q_matrix[i][j]) > self.convergence_threshold):
+          if (abs(QMatrix_get(self.q_matrix, i, j) - QMatrix_get(new_q_matrix,i,j)) > self.convergence_threshold):
             self.convergence_counter = 0
             return False
       self.convergence_counter += 1
@@ -124,14 +132,17 @@ class QLearning(object):
       print("Recieved a reward message")
       print("i: ", reward_msg.iteration_num, "val: ", reward_msg.reward)
 
-      # TODO Update Q Matrix based on Reward, and publish new matrix
-      # Generate new Q matrix
-      new_q_matrix = self.initialize_q_matrix(self.n_states, self.n_actions)
-      new_q_matrix[0][0] = reward_msg.reward
+      if (reward_msg.iteration_num % 100  == 0):
+          print(self.q_matrix)
 
+      # TODO Replace this with actual code for updating QMatrix based on reward and previous action
+      new_q_matrix = self.q_matrix
+      if (reward_msg.reward > 1):
+          QMatrix_set(new_q_matrix,0,0,reward_msg.reward)
+          
       self.check_converged(new_q_matrix)
       self.q_matrix = new_q_matrix # After checking convergence, update q_matrix
-
+      print(QMatrix_get(self.q_matrix, 0, 0))
       if self.converged:
         self.save_q_matrix()
       else:

@@ -78,8 +78,13 @@ class QLearning(object):
         self.action_pub.publish(rand_a['object'], rand_a['tag'])
 
     def initialize_q_matrix(self, states, actions):
-        empty_matrix = np.zeros((states, actions))
-        q_matrix = QMatrix(q_matrix=QMatrixRow(empty_matrix))
+        new_matrix = []
+        for i in range(states):
+            empty_row = np.zeros(actions)
+            new_matrix.append = QMatrixRow(empty_row)
+        q_matrix = QMatrix(q_matrix=new_matrix)
+        #empty_matrix = np.zeros((states, actions))
+        #q_matrix = QMatrix(q_matrix=QMatrixRow(empty_matrix))
         return q_matrix
 
     def save_q_matrix(self):

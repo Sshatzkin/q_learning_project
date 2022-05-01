@@ -23,7 +23,7 @@ class QLearning(object):
         #
         # e.g. self.action_matrix[0][12] = 5
         self.action_matrix = np.loadtxt(path_prefix + "action_matrix.txt")
-
+        print(self.action_matrix)
         # Fetch actions. These are the only 9 possible actions the system can take.
         # self.actions is an array of dictionaries where the row index corresponds
         # to the action number, and the value has the following form:
@@ -67,7 +67,7 @@ class QLearning(object):
 
         # Publish first random action
         rand_a = self.random_action()
-        self.action_pub.publish(rand_a)
+        #self.action_pub.publish(rand_a)
 
     def initialize_q_matrix(self, states, actions):
         empty_matrix = np.zeros((states, actions))

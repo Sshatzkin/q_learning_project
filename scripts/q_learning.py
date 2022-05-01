@@ -107,9 +107,19 @@ class QLearning(object):
         print("Not yet converged")
 
         # TODO If actions available, take random action and publish
+        rand_a = self.random_action()
+        if rand_a is not None:
+          self.action_pub.publish(rand_a['object'], rand_a['tag'])
+        else:
+          print("No possible actions")
+          # TODO Else, reset simulation and take and publish random action
+          
+          # Reset simulation
+          self.current_state = 0
 
-        # TODO Else, reset simulation and take and publish random action
-
+          # Publish random action
+          rand_a = self.random_action()
+          self.action_pub.publish(rand_a['object'], rand_a['tag'])
       return
 
 if __name__ == "__main__":

@@ -158,8 +158,10 @@ class QLearning(object):
 
     # Function is called when a reward is received from the reward node
     def q_learning_reward_recieved(self, reward_msg):
-      print("Recieved a reward message")
-      print("i: ", reward_msg.iteration_num, "val: ", reward_msg.reward)
+      if (i%100 == 0):
+        print("Recieved a reward message")
+        print("i: ", reward_msg.iteration_num, "val: ", reward_msg.reward)
+        print("Counter: ", self.convergence_counter)
 
       # TODO Replace this with actual code for updating QMatrix based on reward and previous action
       updated_bool = self.update_q_matrix(reward_msg.reward)

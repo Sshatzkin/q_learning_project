@@ -161,9 +161,6 @@ class QLearning(object):
       print("Recieved a reward message")
       print("i: ", reward_msg.iteration_num, "val: ", reward_msg.reward)
 
-      if (reward_msg.iteration_num % 100  == 0):
-          print(self.q_matrix)
-
       # TODO Replace this with actual code for updating QMatrix based on reward and previous action
       updated_bool = self.update_q_matrix(reward_msg.reward)
           
@@ -175,19 +172,27 @@ class QLearning(object):
       else:
         print("Not yet converged")
 
+
         rand_a, self.last_action_i, possible_state = self.random_action()
         if rand_a is not None:
+          self.last_state = self.current_state
           self.current_state = possible_state
           self.action_pub.publish(rand_a['object'], rand_a['tag'])
         else:
           print("No possible actions")
+
+          if (reward_msg.iteration_num % 10  == 0):
+            print(self.q_matrix)
           
           # Reset simulation
           self.current_state = 0
 
           # Publish random action
+          self.last_state = 0
           rand_a, self.last_action_i, self.current_state = self.random_action()
           self.action_pub.publish(rand_a['object'], rand_a['tag'])
+
+          
       return
 
 if __name__ == "__main__":

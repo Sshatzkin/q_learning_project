@@ -183,7 +183,7 @@ class QLearning(object):
         else:
           print("No possible actions")
 
-          if (reward_msg.iteration_num % 10  == 0):
+          if (reward_msg.iteration_num % 1000  == 0):
             print(self.q_matrix)
           
           # Reset simulation

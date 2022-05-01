@@ -95,7 +95,7 @@ class QLearning(object):
         if (len(possible_end_states) == 0): # if no possible actions, return None
           return None, None
         end_state = np.random.choice(possible_end_states)#np.random.randint(low=0, high=(len(possible_actions) - 1))
-        return self.actions[self.action_matrix[self.current_state][end_state]], end_state
+        return self.actions[int(self.action_matrix[self.current_state][end_state])], end_state
 
 
     # Function is called when a reward is received from the reward node

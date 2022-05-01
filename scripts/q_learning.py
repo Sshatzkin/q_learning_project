@@ -34,7 +34,7 @@ class QLearning(object):
             lambda x: {"object": colors[int(x[0])], "tag": int(x[1])},
             self.actions
         ))
-
+        print(self.actions)
 
         # Fetch states. There are 64 states. Each row index corresponds to the
         # state number, and the value is a list of 3 items indicating the positions
@@ -45,6 +45,7 @@ class QLearning(object):
         # Note: that not all states are possible to get to.
         self.states = np.loadtxt(path_prefix + "states.txt")
         self.states = list(map(lambda x: list(map(lambda y: int(y), x)), self.states))
+        print(self.states)
 
 
         # --------------- Our Code after this point --------------- #

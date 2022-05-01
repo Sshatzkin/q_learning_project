@@ -61,6 +61,9 @@ class QLearning(object):
         # Initialize Training Variables
         self.converged = False # boolean to check if converged
         self.current_state = 0 # current state
+        self.convergence_threshold = 0.001 # Similarity between two vals to be considered "the same"
+        self.convergence_max = 1000 # max number of iterations without change before convergence
+        self.convergence_counter = 0 # counter for convergence
 
         # Initialize Q Matrix of size 64 (states) x 9 (actions) and publish it
         self.n_actions = 9; self.n_states = 64
@@ -98,12 +101,29 @@ class QLearning(object):
         return self.actions[self.action_matrix[self.current_state][end_state]], end_state
 
 
+    def check_converged(self, new_q_matrix):
+      for i in range(self.n_states):
+        for j in range(self.n_actions):
+          if (abs(self.q_matrix[i][j] - new_q_matrix[i][j]) > self.convergence_threshold):
+            self.convergence_counter = 0
+            return False
+      self.convergence_counter += 1
+      if (self.convergence_counter < self.convergence_max):
+        return False
+      return True
+
     # Function is called when a reward is received from the reward node
     def q_learning_reward_recieved(self, reward_msg):
       print("Recieved a reward message")
-      print(reward_msg)
+      print("i: ", reward_msg.iteration_num, "val: ", reward_msg.reward)
 
       # TODO Update Q Matrix based on Reward, and publish new matrix
+      # Generate new Q matrix
+      new_q_matrix = self.initialize_q_matrix(self.n_states, self.n_actions)
+      new_q_matrix[0][0] = reward_msg.reward
+
+      self.check_converged(new_q_matrix)
+      self.q_matrix = new_q_matrix # After checking convergence, update q_matrix
 
       if self.converged:
         self.save_q_matrix()

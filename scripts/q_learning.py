@@ -69,6 +69,8 @@ class QLearning(object):
         self.n_actions = 9; self.n_states = 64
         self.q_matrix = self.initialize_q_matrix(self.n_states, self.n_actions)
         self.matrix_pub.publish(self.q_matrix)
+        print(self.q_matrix.q_matrix.q_matrix_row)
+        print(type(self.q_matrix.q_matrix.q_matrix_row))
 
         # Sleep before publishing first action to ensure that all subscribers are ready
         rospy.sleep(3)

@@ -129,11 +129,6 @@ class QLearning(object):
 
 
     def check_converged(self, updated):
-      #for i in range(self.n_states):
-      #  for j in range(self.n_actions):
-      #    if (abs(QMatrix_get(self.q_matrix, i, j) - QMatrix_get(new_q_matrix,i,j)) > self.convergence_threshold):
-      #      self.convergence_counter = 0
-      #      return False
       if (updated):
         self.convergence_counter = 0
         self.converged = False
@@ -166,7 +161,6 @@ class QLearning(object):
         print("i: ", reward_msg.iteration_num, "val: ", reward_msg.reward)
         print("Counter: ", self.convergence_counter)
 
-      # TODO Replace this with actual code for updating QMatrix based on reward and previous action
       updated_bool = self.update_q_matrix(reward_msg.reward)
           
       self.check_converged(updated_bool)

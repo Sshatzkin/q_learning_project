@@ -74,7 +74,7 @@ class QLearning(object):
         self.last_state = None # last state
         self.last_action_i = None # last action
         self.convergence_threshold = 0.001 # Similarity between two vals to be considered "the same"
-        self.convergence_max = 100 # max number of iterations without change before convergence
+        self.convergence_max = 10000 # max number of iterations without change before convergence
         self.convergence_counter = 0 # counter for convergence
 
         self.alpha = 1 # learning rate
@@ -136,11 +136,14 @@ class QLearning(object):
       #      return False
       if (updated):
         self.convergence_counter = 0
+        self.converged = False
         return False
       else:
         self.convergence_counter += 1
         if (self.convergence_counter < self.convergence_max):
+          self.converged = False  
           return False
+        self.converged = True
         return True
 
     def update_q_matrix(self, reward):
@@ -158,7 +161,7 @@ class QLearning(object):
 
     # Function is called when a reward is received from the reward node
     def q_learning_reward_recieved(self, reward_msg):
-      if (i%100 == 0):
+      if (reward_msg.iteration_num%100 == 0):
         print("Recieved a reward message")
         print("i: ", reward_msg.iteration_num, "val: ", reward_msg.reward)
         print("Counter: ", self.convergence_counter)
@@ -169,10 +172,12 @@ class QLearning(object):
       self.check_converged(updated_bool)
 
       if self.converged:
+
         self.save_q_matrix()
         print(self.q_matrix)
+        print("Converged in iteration: ", reward_msg.iteration_num)
       else:
-        print("Not yet converged")
+        #print("Not yet converged")
 
 
         rand_a, self.last_action_i, possible_state = self.random_action()
@@ -181,7 +186,7 @@ class QLearning(object):
           self.current_state = possible_state
           self.action_pub.publish(rand_a['object'], rand_a['tag'])
         else:
-          print("No possible actions")
+         # print("No possible actions")
 
           if (reward_msg.iteration_num % 1000  == 0):
             print(self.q_matrix)

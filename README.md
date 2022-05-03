@@ -31,4 +31,17 @@ The goal of this project is to write and train an algorithm to allow a robot to 
 
 
 ## Q-Learning Algorithm Description
+### Selecting and Executing Actions
+``random_action()``: Uses the current state and the action matrices to return a random action that can be taken from the current state, and the new state that the action leads to. Gets a list of ``self.n_states`` actions and chooses one at random, then determines and returns the corresponding action index.
+``q_learning_reward_recieved``: Executes the action produced by ``random_action()``
+
+### Updating the Q-Matrix
+``update_q_matrix()``: Implements the Q-Learning algorithm, returns an updated Q-Matrix given a reward.
+``q_learning_reward_recieved()``: Calls ``update_q_matrix()`` and supplies the reward to that function.
+
+### Determining Convergence
+``check_converged()``: Keeps track of how many times the function has been called, and if it has surpassed the maximum number of iterations, return True, otherwise returns False. It is checked each time a reward is published by the reward node, called by ``q_learning_reward_recieved()``.
+
+### Execution
+Will call a function to send the path to be executed to a translation script, which will publish the appropriate movements for the Turtlebot. 
 

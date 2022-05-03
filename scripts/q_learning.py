@@ -9,6 +9,7 @@ from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTa
 
 # Path of directory on where this file is located
 path_prefix = os.path.dirname(__file__) + "/action_states/"
+save_path = os.path.dirname(__file__) + "/q_matrix/"
 
 
 def QMatrix_get(qmatrix, x, y):
@@ -95,18 +96,42 @@ class QLearning(object):
         self.action_pub.publish(rand_a['object'], rand_a['tag'])
 
     def initialize_q_matrix(self, states, actions):
+        exists = False
+        if os.path.exists(save_path + "q_matrix.txt"):
+            print("Existing q_matrix, loading...")
+            exists = True
+            m = np.loadtxt(save_path + "q_matrix.txt")
+        else:
+            print("Initializing empty q_matrix...")
         new_matrix = []
         for i in range(states):
-            empty_row = np.zeros(actions)
+            if exists:
+                empty_row = m[i]
+            else:
+                empty_row = np.zeros(actions)
             new_matrix.append(QMatrixRow(empty_row))
         q_matrix = QMatrix(q_matrix=new_matrix)
         #empty_matrix = np.zeros((states, actions))
         #q_matrix = QMatrix(q_matrix=QMatrixRow(empty_matrix))
+        print("Initialized")
         return q_matrix
 
     def save_q_matrix(self):
         # TODO: You'll want to save your q_matrix to a file once it is done to
         # avoid retraining
+        if os.path.exists(save_path):
+            if os.path.exists(save_path + "q_matrix.txt"):
+                print("Existing q_matrix saved, overwriting...")
+                os.remove(save_path + "q_matrix.txt")
+        else:
+            print("Creating directory...")
+            os.makedirs(save_path)
+        print("Saving...")
+        m = []
+        for row in self.q_matrix.q_matrix:
+            m.append(row.q_matrix_row)
+        np.savetxt(save_path + "q_matrix.txt", m)
+        print("Saved")
         return
 
     # random_action uses the current state and the action matrices to return a random action

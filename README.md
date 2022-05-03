@@ -23,3 +23,12 @@ A 1-2 sentence description of how your team plans to implement each of the follo
 - __Q-learning algorithm__ - We expect to complete this by the first Q-Matrix deadline on Tuesday, May 3 at 11:00am
 - __Robot perception__ - Friday May 6
 - __Robot manipulation & movement__ - Monday May 9
+
+## Objectives
+The goal of this project is to write and train an algorithm to allow a robot to arrange a set of objects in specific locations/states. By implementing the Q-Learning algorithm we can use reinforcement learning to train and test our implementation.
+
+## High Level Description
+
+
+## Q-Learning Algorithm Description
+

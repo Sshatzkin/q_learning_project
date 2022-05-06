@@ -96,19 +96,19 @@ class QLearning(object):
         self.action_pub.publish(rand_a['object'], rand_a['tag'])
 
     def initialize_q_matrix(self, states, actions):
-        exists = False
-        if os.path.exists(save_path + "q_matrix.txt"):
-            print("Existing q_matrix, loading...")
-            exists = True
-            m = np.loadtxt(save_path + "q_matrix.txt")
-        else:
-            print("Initializing empty q_matrix...")
+        # exists = False
+        # if os.path.exists(save_path + "q_matrix.txt"):
+        #     print("Existing q_matrix, loading...")
+        #     exists = True
+        #     m = np.loadtxt(save_path + "q_matrix.txt")
+        # else:
+        print("Initializing empty q_matrix...")
         new_matrix = []
         for i in range(states):
-            if exists:
-                empty_row = m[i]
-            else:
-                empty_row = np.zeros(actions)
+            # if exists:
+            #     empty_row = m[i]
+            # else:
+            empty_row = np.zeros(actions)
             new_matrix.append(QMatrixRow(empty_row))
         q_matrix = QMatrix(q_matrix=new_matrix)
         #empty_matrix = np.zeros((states, actions))

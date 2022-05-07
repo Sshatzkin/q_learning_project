@@ -80,10 +80,11 @@ class ActionPublisher(object):
         if max_val == 0:
             return None, None, None
         end_state = np.where(self.action_matrix[self.current_state] == max_index)[0][0]#self.action_matrix[self.current_state][max_index]
+        print("------------------")
+        print("AP: Publishing Action:")
         print("Next Action: ", self.actions[max_index]) 
         print("Action Index: ", max_index)
         print("New State: ", end_state)
-        print("______")
         
         return self.actions[max_index], max_index, end_state
 

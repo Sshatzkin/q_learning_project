@@ -5,7 +5,7 @@ from turtle import update
 import rospy
 import numpy as np
 import os
-from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTag, QMatrixRow
+from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTag, QMatrixRow, ActionConfirmation
 
 # Path of directory on where this file is located
 path_prefix = os.path.dirname(__file__) + "/action_states/"
@@ -50,6 +50,8 @@ class ActionPublisher(object):
         # Initialize Robot Action Publisher
         self.action_pub = rospy.Publisher("/q_learning/robot_action", RobotMoveObjectToTag, queue_size=10)
 
+        rospy.Subscriber("/q_learning/action_conf", ActionConfirmation, self.action_confirmed)
+
         # Initialize Training Variables
         self.completed = False # Keep
         self.current_state = 0 # current state
@@ -84,14 +86,13 @@ class ActionPublisher(object):
     #def find_end_state (current_state, action):
     #    return np.where(action == self.)
 
-
-    def run(self):
-        for i in range(2):
-            rospy.sleep(5)
-            #self.select_action()
-            self.last_state = self.current_state
-            action, self.last_action_i, self.current_state = self.select_action()
-            self.action_pub.publish(action['object'], action['tag'])
+    def action_confirmed(self):
+        print("Recieved action confirmation")
+        rospy.sleep(0.5)
+        
+        self.last_state = self.current_state
+        action, self.last_action_i, self.current_state = self.select_action()
+        self.action_pub.publish(action['object'], action['tag'])
 
 
 if __name__ == "__main__":

@@ -25,8 +25,7 @@ class ActionPublisher(object):
         #
         # e.g. self.action_matrix[0][12] = 5
         self.action_matrix = np.loadtxt(path_prefix + "action_matrix.txt")
-        print(self.action_matrix)
-
+    
         # Fetch actions. These are the only 9 possible actions the system can take.
         # self.actions is an array of dictionaries where the row index corresponds
         # to the action number, and the value has the following form:
@@ -37,7 +36,6 @@ class ActionPublisher(object):
             lambda x: {"object": colors[int(x[0])], "tag": int(x[1])},
             self.actions
         ))
-        print(self.actions)
 
 
         # Fetch pre-trained Q-matrix.
@@ -45,7 +43,7 @@ class ActionPublisher(object):
         if os.path.exists(save_path + "q_matrix.txt"):
             print("Existing q_matrix, loading...")
             self.q_matrix = np.loadtxt(save_path + "q_matrix.txt")
-            print(self.q_matrix)
+            #print(self.q_matrix)
         else:
             print("Pre-trained Q-matrix doesn't exist at the specified path.")
         

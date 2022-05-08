@@ -5,6 +5,7 @@ from turtle import update
 import rospy
 import numpy as np
 import os
+from std_msgs.msg import Bool
 from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTag, QMatrixRow
 
 # Path of directory on where this file is located
@@ -25,8 +26,7 @@ class ActionPublisher(object):
         #
         # e.g. self.action_matrix[0][12] = 5
         self.action_matrix = np.loadtxt(path_prefix + "action_matrix.txt")
-        print(self.action_matrix)
-
+    
         # Fetch actions. These are the only 9 possible actions the system can take.
         # self.actions is an array of dictionaries where the row index corresponds
         # to the action number, and the value has the following form:
@@ -37,20 +37,21 @@ class ActionPublisher(object):
             lambda x: {"object": colors[int(x[0])], "tag": int(x[1])},
             self.actions
         ))
-        print(self.actions)
 
 
         # Fetch pre-trained Q-matrix.
         # If the matrix doesn't exist, throw an error
         if os.path.exists(save_path + "q_matrix.txt"):
-            print("Existing q_matrix, loading...")
+            print("AP: Existing q_matrix, loading...")
             self.q_matrix = np.loadtxt(save_path + "q_matrix.txt")
-            print(self.q_matrix)
+
         else:
-            print("Pre-trained Q-matrix doesn't exist at the specified path.")
+            print("AP: Pre-trained Q-matrix doesn't exist at the specified path.")
         
         # Initialize Robot Action Publisher
         self.action_pub = rospy.Publisher("/q_learning/robot_action", RobotMoveObjectToTag, queue_size=10)
+
+        rospy.Subscriber("/q_learning/action_conf", Bool, self.action_confirmed)
 
         # Initialize Training Variables
         self.completed = False # Keep
@@ -76,27 +77,31 @@ class ActionPublisher(object):
             if val > max_val:
                 max_val = val
                 max_index = i
+        if max_val == 0:
+            return None, None, None
         end_state = np.where(self.action_matrix[self.current_state] == max_index)[0][0]#self.action_matrix[self.current_state][max_index]
+        print("------------------")
+        print("AP: Publishing Action:")
         print("Next Action: ", self.actions[max_index]) 
         print("Action Index: ", max_index)
         print("New State: ", end_state)
-        print("______")
+        
         return self.actions[max_index], max_index, end_state
 
     #def find_end_state (current_state, action):
     #    return np.where(action == self.)
 
-
-    def run(self):
-        for i in range(2):
-            rospy.sleep(5)
-            #self.select_action()
-            self.last_state = self.current_state
-            action, self.last_action_i, self.current_state = self.select_action()
+    def action_confirmed(self, conf):
+        print("AP: Recieved action confirmation: ", conf)
+        rospy.sleep(0.5)
+        
+        self.last_state = self.current_state
+        action, self.last_action_i, self.current_state = self.select_action()
+        if action != None:
             self.action_pub.publish(action['object'], action['tag'])
 
 
 if __name__ == "__main__":
     node = ActionPublisher()
-    node.run()
-    #rospy.spin()
+    
+    rospy.spin()

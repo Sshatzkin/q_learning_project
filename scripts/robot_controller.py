@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 from ast import NameConstant
-from turtle import color, update
+from turtle import color, forward, update
 import rospy
 import numpy as np
 import os
 import cv2, cv_bridge
 from std_msgs.msg import Bool
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image,LaserScan
 from geometry_msgs.msg import Twist, Vector3
 from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTag, QMatrixRow
 
@@ -37,10 +37,9 @@ class RobotController(object):
         # subscribe to the robot's RGB camera data stream
         self.image_sub = rospy.Subscriber('camera/rgb/image_raw', Image, self.image_callback)
 
-        # Create a default twist msg (all values 0).
-        lin = Vector3()
-        ang = Vector3()
-        self.twist = Twist(linear=lin,angular=ang)
+        # Subscribe to LIDAR
+        rospy.Subscriber("/scan", LaserScan, self.scan_callback)
+       
 
         # subscribe to the reward received from the reward node
         rospy.Subscriber("/q_learning/robot_action", RobotMoveObjectToTag, self.action_recieved)
@@ -48,6 +47,10 @@ class RobotController(object):
         # --- Initialize Movement ---
         self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
 
+        # Create a default twist msg (all values 0).
+        lin = Vector3()
+        ang = Vector3()
+        self.twist = Twist(linear=lin,angular=ang)
 
         # -- Logic ---
         self.confirmation_pub = rospy.Publisher("/q_learning/action_conf", Bool, queue_size=10)
@@ -61,6 +64,8 @@ class RobotController(object):
         self.current_action = None
 
         self.horizontal_error = 0
+
+        self.distance_error = 0
 
         self.target_in_view = True
 
@@ -102,13 +107,36 @@ class RobotController(object):
 
         self.update_movement()
 
+    def scan_callback(self, data):
+        print("Recieved scan")
+        center_average = 0
+        angles = [359, 0, 1]
+        for i in angles:
+            center_average += data.ranges[i]
+        center_average = center_average / len(angles)
+
+        if center_average <= 0.2 and center_average != 0.0:
+            self.distance_error = center_average / 3.5
+
+        self.update_movement()
+        return
+
 
     def update_movement(self):
+        # If can see target (cam), turn toward it
         if (self.target_in_view):
             turn_speed = (- self.horizontal_error) * 0.4
             self.twist.angular.z = turn_speed
+            self.twist.linear.x = 0
         else:
             self.twist.angular.z = 0.4
+            self.twist.linear.x = 0
+
+        # If target in center, approach
+        if (self.target_in_view and self.horizontal_error < 0.2):
+            forward_speed = self.distance_error * 0.5
+            self.twist.linear.x = forward_speed
+        
 
 
         self.twist_pub.publish(self.twist)

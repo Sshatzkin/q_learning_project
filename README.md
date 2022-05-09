@@ -52,3 +52,13 @@ We have defined a function ``random_action()``: Uses the current state and the a
 ### Execution
 
 We will keep track of our current state, and publish an action which has the maximum reward value for our current state. Another script will subscribe to these actions and execute the appropriate movements for the Turtlebot.
+
+# Launch Notes
+
+## Terminals
+
+1. roscore
+2. ssh into robot and run bringup
+3. ssh into robot and run bringup_cam
+4. run rosrun image_transport republish compressed in:=raspicam_node/image raw out:=camera/rgb/image_raw
+5. run  roslaunch q_learning_project action.launch

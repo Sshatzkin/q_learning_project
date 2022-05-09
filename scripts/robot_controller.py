@@ -51,6 +51,8 @@ class RobotController(object):
 
         self.current_action = None
 
+        self.horizontal_error = 0
+
         rospy.sleep(3)
 
     def image_callback(self, msg):
@@ -64,10 +66,6 @@ class RobotController(object):
 
             # Generate mask
             mask = cv2.inRange(hsv, lower_colors[i], upper_colors[i])
-            #mask_blue = cv2.inRange(hsv, lower_colors[1], upper_colors[1])
-            #mask_pink = cv2.inRange(hsv, lower_colors[2], upper_colors[2])
-            #masks = [mask_green, mask_blue, mask_pink]
-            
 
             M = cv2.moments(mask)
 

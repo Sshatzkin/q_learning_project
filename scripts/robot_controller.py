@@ -8,7 +8,7 @@ import os
 import cv2, cv_bridge
 from std_msgs.msg import Bool
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Vector3
 from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTag, QMatrixRow
 
 
@@ -37,10 +37,19 @@ class RobotController(object):
         # subscribe to the robot's RGB camera data stream
         self.image_sub = rospy.Subscriber('camera/rgb/image_raw', Image, self.image_callback)
 
+        # Create a default twist msg (all values 0).
+        lin = Vector3()
+        ang = Vector3()
+        self.twist = Twist(linear=lin,angular=ang)
 
         # subscribe to the reward received from the reward node
         rospy.Subscriber("/q_learning/robot_action", RobotMoveObjectToTag, self.action_recieved)
 
+        # --- Initialize Movement ---
+        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
+
+
+        # -- Logic ---
         self.confirmation_pub = rospy.Publisher("/q_learning/action_conf", Bool, queue_size=10)
 
         # Current target can be "green", "blue", "pink", 1, 2, 3, or None if awaiting action
@@ -52,6 +61,8 @@ class RobotController(object):
         self.current_action = None
 
         self.horizontal_error = 0
+
+        self.target_in_view = True
 
         rospy.sleep(3)
 
@@ -77,12 +88,31 @@ class RobotController(object):
 
                 # Visualize red circle in center
                 cv2.circle(image, (cx, cy), 20, (0,0,255), -1)
+                self.target_in_view = True
 
+                self.horizontal_error = (cx - w/2) / (w /2)
+                print("Horizontal Error: ", self.horizontal_error)
+
+            else:
+                self.target_in_view = False
+                self.horizontal_error = 0
+    
         cv2.imshow("window", image)
         cv2.waitKey(3)
-    
-        
 
+        self.update_movement()
+
+
+    def update_movement(self):
+        if (self.target_in_view):
+            turn_speed = (- self.horizontal_error) * 0.4
+            self.twist.angular.z = turn_speed
+        else:
+            self.twist.angular.z = 0.4
+
+
+        self.twist_pub.publish(self.twist)
+        return
 
 
     def action_recieved(self, action):
@@ -90,7 +120,7 @@ class RobotController(object):
         self.current_action = action
         self.current_target = action.robot_object
         self.current_target_type = "baton"
-        rospy.sleep(3)
+        rospy.sleep(15)
         self.send_confirmation()
         return
         

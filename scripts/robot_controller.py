@@ -58,7 +58,7 @@ class RobotController(object):
         # Current target can be "green", "blue", "pink", 1, 2, 3, or None if awaiting action
         self.current_target = None
 
-        # Target type is "baton", "ar_tag" or None
+        # Target type is "baton", "artag" or None
         self.current_target_type = None
 
         self.current_action = None
@@ -96,11 +96,15 @@ class RobotController(object):
                 self.target_in_view = True
 
                 self.horizontal_error = (cx - w/2) / (w /2)
-                print("Horizontal Error: ", self.horizontal_error)
 
             else:
                 self.target_in_view = False
-                self.horizontal_error = 0
+                self.horizontal_error = 10
+
+        elif (self.current_target_type == "artag"):
+            self.horizontal_error = 0
+        else:
+            self.horizontal_error = 0
     
         cv2.imshow("window", image)
         cv2.waitKey(3)
@@ -108,36 +112,43 @@ class RobotController(object):
         self.update_movement()
 
     def scan_callback(self, data):
-        print("Recieved scan")
         center_average = 0
         angles = [359, 0, 1]
         for i in angles:
-            center_average += data.ranges[i]
+            #print(i, ": ", data.ranges[i])
+            if data.ranges[i] == 0.0:
+                center_average += 0.01
+            else:
+                center_average += data.ranges[i]
         center_average = center_average / len(angles)
-
-        if center_average <= 0.2 and center_average != 0.0:
+        if center_average != 0.0 and center_average > 0.2:
             self.distance_error = center_average / 3.5
-
+        else:
+            self.distance_error = 0
         self.update_movement()
         return
 
 
     def update_movement(self):
-        # If can see target (cam), turn toward it
-        if (self.target_in_view):
-            turn_speed = (- self.horizontal_error) * 0.4
-            self.twist.angular.z = turn_speed
-            self.twist.linear.x = 0
-        else:
-            self.twist.angular.z = 0.4
-            self.twist.linear.x = 0
+        print("Horizontal Error: ", self.horizontal_error)
+        print("Distance Error: ", self.distance_error)
+        if self.current_target_type != None:
+            # If can see target (cam), turn toward it
+            if (self.target_in_view):
+                turn_speed = (- self.horizontal_error) * 0.4
+                self.twist.angular.z = turn_speed
+                self.twist.linear.x = 0
+            else:
+                self.twist.angular.z = 0.4
+                self.twist.linear.x = 0
 
-        # If target in center, approach
-        if (self.target_in_view and self.horizontal_error < 0.2):
-            forward_speed = self.distance_error * 0.5
-            self.twist.linear.x = forward_speed
-        
+            # If target in center, approach
+            if (self.target_in_view and self.horizontal_error < 0.1):
+                forward_speed = self.distance_error * 0.5
+                self.twist.linear.x = forward_speed
 
+            if (self.horizontal_error < 0.1 and self.distance_error == 0 and self.current_target_type == "baton"):
+                self.pick_up_baton()
 
         self.twist_pub.publish(self.twist)
         return
@@ -148,12 +159,26 @@ class RobotController(object):
         self.current_action = action
         self.current_target = action.robot_object
         self.current_target_type = "baton"
-        rospy.sleep(15)
+        #rospy.sleep(25)
+        #self.send_confirmation()
+        return
+
+    def pick_up_baton(self):
+        print("Picking up baton")
+        rospy.sleep(5)
+        self.current_target_type = "artag"
+        self.current_target = self.current_action.tag_id
+        self.target_in_view = False
+        print("Current target updated to tag: ", self.current_target)
         self.send_confirmation()
         return
+
         
 
     def send_confirmation(self):
+        self.current_action = None
+        self.current_target = None
+        self.current_target_type = None
         self.confirmation_pub.publish(True)
         print("RC: Sending Action Completion Confirmation")
 

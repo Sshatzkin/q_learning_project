@@ -18,6 +18,15 @@ def convert_hsv (h, s, v):
     new_v = v * 256 - 1
     return np.array([new_h, new_s, new_v])
 
+def tag_center(tag):
+    ave_x = 0
+    ave_y = 0
+    for i in range(4):
+        ave_x += tag[i][0]
+        ave_y += tag[i][1]
+
+    return [ave_x/4, ave_y/4]
+
 # Green, Blue, Pink
 lower_colors = [convert_hsv(75, 0.40, 0.40), convert_hsv(180, 0.40, 0.40), convert_hsv(300, 0.40, 0.40)] 
 upper_colors = [convert_hsv(80, 1, 1), convert_hsv(200, 1, 1), convert_hsv(330, 1, 1)]
@@ -33,6 +42,10 @@ class RobotController(object):
         self.bridge = cv_bridge.CvBridge()
 
         cv2.namedWindow("window", 1)
+
+
+        # load DICT_4X4_50
+        self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
 
         # subscribe to the robot's RGB camera data stream
         self.image_sub = rospy.Subscriber('camera/rgb/image_raw', Image, self.image_callback)
@@ -81,12 +94,16 @@ class RobotController(object):
         rospy.sleep(3)
 
     def image_callback(self, msg):
+        #print("See image")
         # converts the incoming ROS message to OpenCV format and HSV (hue, saturation, value)
         image = self.bridge.imgmsg_to_cv2(msg,desired_encoding='bgr8')
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        h, w, d = image.shape
+        #cv2.imshow("window", image)
                 
         if (self.current_target_type == "baton"):
-            h, w, d = image.shape
+            #print("Case 1")
+            hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            
             i = color_index[self.current_target]
 
             # Generate mask
@@ -111,12 +128,46 @@ class RobotController(object):
                 self.horizontal_error = 10
 
         elif (self.current_target_type == "artag"):
-            self.horizontal_error = 0
+            #print("Case 2")
+            grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+            # search for tags from DICT_4X4_50 in a GRAYSCALE image
+            corners, ids, rejected_points = cv2.aruco.detectMarkers(grayscale_image, self.aruco_dict)
+
+            # corners is a 4D array of shape (n, 1, 4, 2), where n is the number of tags detected
+            # each entry is a set of four (x, y) pixel coordinates corresponding to the
+            # location of a tag's corners in the image
+
+            # ids is a 2D array array of shape (n, 1)
+            # each entry is the id of a detected tag in the same order as in corners
+
+            # rejected_points contains points from detected tags that don't have codes matching the dictionary
+            
+            #cv2.circle(image, (cx, cy), 20, (0,0,255), -1)
+            
+            if (len(corners) > 0):
+                #centers = []
+                for i, tag in enumerate(corners):
+                    #print("Tag ",ids[i][0], ": ", tag[0])
+                    if (ids[i] == self.current_target):
+                        #print("match tag")
+                        center = tag_center(tag[0])
+                        self.horizontal_error = (center[0] - w/2) / (w /2)
+                        self.target_in_view = True
+                        break
+                    else:
+                        self.target_in_view = False
+                        self.horizontal_error = 0
+                
+            else:
+                self.target_in_view = False
+                self.horizontal_error = 10
         else:
+            #print("Case 3")
             self.horizontal_error = 0
     
-        cv2.imshow("window", image)
-        cv2.waitKey(3)
+        #cv2.imshow("window", image)
+        #cv2.waitKey(3)
 
         self.update_movement()
 
@@ -132,7 +183,7 @@ class RobotController(object):
             else:
                 center_average += data.ranges[i]
         center_average = center_average / len(angles)
-        if center_average != 0.0 and center_average > 0.3:
+        if center_average != 0.0 and center_average > 0.4:
             self.distance_error = center_average / 3.5
         else:
             self.distance_error = 0
@@ -158,14 +209,24 @@ class RobotController(object):
                 forward_speed = self.distance_error * 0.5
                 self.twist.linear.x = forward_speed
 
-            if (self.horizontal_error < 0.1 and self.distance_error == 0 and self.current_target_type == "baton"):
+            # If centered and close, increment distance
+            if (self.horizontal_error < 0.1 and self.distance_error == 0):
                 self.arrived_at_target_counter += 1
             else:
                 self.arrived_at_target_counter = max(0, self.arrived_at_target_counter - 1)
+            
+            print("Counter: ",self.arrived_at_target_counter)
 
-            if (self.arrived_at_target_counter > 100 and self.holding_item == False):    
+            if (self.arrived_at_target_counter > 100 and self.holding_item == False and self.current_target_type == 'baton'):    
                 self.holding_item = True
+                #if self.current_target_type == 'baton':
                 self.pick_up_baton()
+            elif (self.arrived_at_target_counter > 100 and self.holding_item == True and self.current_target_type == 'artag'):
+                self.holding_item = False
+                #elif self.current_target_type == 'artag':
+                self.place_baton()
+
+                    
         else:
             self.twist.angular.z = 0
             self.twist.linear.x = 0
@@ -186,18 +247,27 @@ class RobotController(object):
 
     def pick_up_baton(self):
         print("Picking up baton")
-        rospy.sleep(10)
+        rospy.sleep(3)
+        # TODO: Implement pickup
         print("Current Action: ", self.current_action)
         self.current_target_type = "artag"
         self.current_target = self.current_action.tag_id
         self.target_in_view = False
         self.arrived_at_target_counter = 0
         print("Current target updated to tag: ", self.current_target)
-        self.send_confirmation()
-        self.holding_item = False
         return
 
-        
+    def place_baton(self):
+        print("Placing Baton")
+        rospy.sleep(3)
+        # TODO : Implement placement
+        self.holding_item = False
+        self.arrived_at_target_counter = 0
+        self.target_in_view = False
+        self.current_target = None
+        self.current_target_type = None
+        self.send_confirmation()
+        return
 
     def send_confirmation(self):
         self.current_action = None

@@ -69,6 +69,8 @@ class RobotController(object):
 
         self.target_in_view = True
 
+        self.arrived_at_target_counter = 0
+
         rospy.sleep(3)
 
     def image_callback(self, msg):
@@ -148,6 +150,11 @@ class RobotController(object):
                 self.twist.linear.x = forward_speed
 
             if (self.horizontal_error < 0.1 and self.distance_error == 0 and self.current_target_type == "baton"):
+                self.arrived_at_target_counter += 1
+            else:
+                self.arrived_at_target_counter = max(0, self.arrived_at_target_counter - 1)
+
+            if (self.arrived_at_target_counter > 10):    
                 self.pick_up_baton()
 
         self.twist_pub.publish(self.twist)
@@ -159,6 +166,7 @@ class RobotController(object):
         self.current_action = action
         self.current_target = action.robot_object
         self.current_target_type = "baton"
+        self.arrived_at_target_counter = 0
         #rospy.sleep(25)
         #self.send_confirmation()
         return
@@ -169,6 +177,7 @@ class RobotController(object):
         self.current_target_type = "artag"
         self.current_target = self.current_action.tag_id
         self.target_in_view = False
+        self.arrived_at_target_counter = 0
         print("Current target updated to tag: ", self.current_target)
         self.send_confirmation()
         return

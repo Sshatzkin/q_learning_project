@@ -63,13 +63,20 @@ class RobotController(object):
 
         self.current_action = None
 
+        # Error vals used for proportional control, set by perception functions
         self.horizontal_error = 0
 
         self.distance_error = 0
 
-        self.target_in_view = True
+        # Used to keep track of whether target item is in camera view
+        self.target_in_view = False
 
+        # Counter used to ensure robot does not pick up colored
+        #   item until it is definitely in front of it
         self.arrived_at_target_counter = 0
+
+        # True when robot is holding an item
+        self.holding_item = False
 
         rospy.sleep(3)
 
@@ -120,10 +127,12 @@ class RobotController(object):
             #print(i, ": ", data.ranges[i])
             if data.ranges[i] == 0.0:
                 center_average += 0.01
+            if data.ranges[i] > 4:
+                center_average += 0.01
             else:
                 center_average += data.ranges[i]
         center_average = center_average / len(angles)
-        if center_average != 0.0 and center_average > 0.2:
+        if center_average != 0.0 and center_average > 0.3:
             self.distance_error = center_average / 3.5
         else:
             self.distance_error = 0
@@ -132,8 +141,8 @@ class RobotController(object):
 
 
     def update_movement(self):
-        print("Horizontal Error: ", self.horizontal_error)
-        print("Distance Error: ", self.distance_error)
+        #print("Horizontal Error: ", self.horizontal_error)
+        #print("Distance Error: ", self.distance_error)
         if self.current_target_type != None:
             # If can see target (cam), turn toward it
             if (self.target_in_view):
@@ -154,8 +163,12 @@ class RobotController(object):
             else:
                 self.arrived_at_target_counter = max(0, self.arrived_at_target_counter - 1)
 
-            if (self.arrived_at_target_counter > 10):    
+            if (self.arrived_at_target_counter > 100 and self.holding_item == False):    
+                self.holding_item = True
                 self.pick_up_baton()
+        else:
+            self.twist.angular.z = 0
+            self.twist.linear.x = 0
 
         self.twist_pub.publish(self.twist)
         return
@@ -173,13 +186,15 @@ class RobotController(object):
 
     def pick_up_baton(self):
         print("Picking up baton")
-        rospy.sleep(5)
+        rospy.sleep(10)
+        print("Current Action: ", self.current_action)
         self.current_target_type = "artag"
         self.current_target = self.current_action.tag_id
         self.target_in_view = False
         self.arrived_at_target_counter = 0
         print("Current target updated to tag: ", self.current_target)
         self.send_confirmation()
+        self.holding_item = False
         return
 
         

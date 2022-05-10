@@ -67,9 +67,10 @@ The ``robot_controller`` node keeps track of its current target, and target type
 ``update_movement(self)``: This function uses the __horizontal error__ and __distance error__ to set the speed and rotation of the robot, steering it toward the target object.
 
 ### Identifying the locations and identities of each of the AR tags
-TODO: Not yet implemented
 
-This step will use the same three functions described in "Identifying the Locations ... of colored objects"
+Using the ARUCO open cv library, we were able to extend the abilities of the ``image_callback`` function to identify AR tags in the captured images.
+
+The ARUCO library provides a function that gives the locations of each of the four corners of the AR tag, and we wrote a custom function, ``tag_center``, which calculates the center of an AR tag given the four corners of the tag. This distance between this calculated AR tag center and the center of the image is used to calcluate the __horizontal error__.
 
 ## Robot Manipulation and Movement
 
@@ -89,7 +90,7 @@ TODO: Not yet implemented
 
 ### Moving to the desired destination (AR tag) with the colored object
 
-TODO: Not yet implemented, will use the same functions as used to approach the colored object
+This step primarily uses the same three functions as moving to pick up the baton. ``image_callback`` and ``scan_callback`` set the horizontal and distance error values to the AR tag, and the robot uses a proportional control mechanism to steer directly toward the tracked object.
 
 ### Putting the colored object back down at the desired destination
 

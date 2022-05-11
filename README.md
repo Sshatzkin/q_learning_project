@@ -2,7 +2,7 @@
 Sam Shatzkin & Josh Garza
 
 Gif 1 - Perception and Movement
-![q_learning_1.gif](https://github.com/Sshatzkin/warmup_project/blob/main/q_learning_1.gif)
+![q_learning_1.gif](https://github.com/Sshatzkin/q_learning_project/blob/main/q_learning_1.gif)
 
 Robot recieves actions, goes to correct baton, waits while it would pick up baton, then drives to correct AR tag, and waits while it would put the AR tag down. After simulating placing the baton, it sends a confirmation of completion, and begins its next task. 
 

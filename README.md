@@ -1,7 +1,9 @@
 # q_learning_project
 Sam Shatzkin & Josh Garza
 
-TODO: Gif
+Gif 1 - Perception and Movement
+![q_learning_1.gif](https://github.com/Sshatzkin/warmup_project/blob/main/q_learning_1.gif)
+
 
 ## Implementation Plan
 
@@ -121,8 +123,8 @@ TODO: Arm-related future work
 
 You need to open 5 terminals when executing this on a physical robot.
 
-1. roscore
-2. ssh into robot and run bringup
-3. ssh into robot and run bringup_cam
-4. run rosrun image_transport republish compressed in:=raspicam_node/image raw out:=camera/rgb/image_raw
-5. run  roslaunch q_learning_project action.launch
+1. ``roscore``
+2. ssh into robot and run ``bringup``
+3. ssh into robot and run ``bringup_cam``
+4. run ``rosrun image_transport republish compressed in:=raspicam_node/image raw out:=camera/rgb/image_raw``
+5. run ``roslaunch q_learning_project action.launch``

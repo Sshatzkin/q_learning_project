@@ -1,6 +1,11 @@
 # q_learning_project
-
 Sam Shatzkin & Josh Garza
+
+Gif 1 - Perception and Movement
+![q_learning_1.gif](https://github.com/Sshatzkin/q_learning_project/blob/main/q_learning_1.gif)
+
+Robot recieves actions, goes to correct baton, waits while it would pick up baton, then drives to correct AR tag, and waits while it would put the AR tag down. After simulating placing the baton, it sends a confirmation of completion, and begins its next task. 
+
 
 ## Implementation Plan
 
@@ -51,4 +56,77 @@ We have defined a function ``random_action()``: Uses the current state and the a
 
 ### Execution
 
-We will keep track of our current state, and publish an action which has the maximum reward value for our current state. Another script will subscribe to these actions and execute the appropriate movements for the Turtlebot.
+We have written a python script, ``action_publisher.py``, which loads the trained q_matrix, and publishes the optimal action at each state to ``/q_learning/robot_action``. The ``robot_controller`` node listens for this action, performs it, and sends a confirmation boolean message on ``/q_learning/action_conf``. When the action_publisher recieves this confirmation message, it publishes the next optimal action.
+
+## Robot Perception Description
+
+### Identifying the locations and identities of each of the colored objects
+
+The ``robot_controller`` node keeps track of its current target, and target type, either a specific baton, a specific ar tag, or nothing. When the robot is currently targetting a baton, it uses data from the camera and LIDAR scanner to find its target. There are 3 key functions that help this happen.
+
+``image_callback(self, msg)``: Each time that the camera returns an image, the robot_controller uses that image to set it's own __horizontal error__, the horizontal distance from it's current target from the center of the image. To find a specific baton, we use a method similar to what was used in the line-following project, to get the location of our current target baton in the image, and steer toward it.
+
+``scan_callback(self, data)``: This function is called each time the scanner returns data, and it is uses the scanner measurements from 359 0, and 1 degrees to set the __distance error__, a value that is used to stop the robot a certain distance from a target object.
+
+``update_movement(self)``: This function uses the __horizontal error__ and __distance error__ to set the speed and rotation of the robot, steering it toward the target object.
+
+### Identifying the locations and identities of each of the AR tags
+
+Using the ARUCO open cv library, we were able to extend the abilities of the ``image_callback`` function to identify AR tags in the captured images.
+
+The ARUCO library provides a function that gives the locations of each of the four corners of the AR tag, and we wrote a custom function, ``tag_center``, which calculates the center of an AR tag given the four corners of the tag. This distance between this calculated AR tag center and the center of the image is used to calcluate the __horizontal error__.
+
+## Robot Manipulation and Movement
+
+### Moving to the right spot in order to pick up a colored object
+
+As described above, the ``image_callback`` and ``scan_callback`` functions set the horizontal and distance error values, which are used by the ``update_movement`` function to set forward and rotation rates.
+
+If the target object is not in view, the robot rotates until the target is identifited.
+
+If the target is in view, the robot rotates toward it until it is centered.
+
+When the target object is within a certain range of the center of the screen, the robot approaches it slowly until it comes within grasping range of the target object.
+
+### Picking up the colored object
+
+TODO: Not yet implemented
+
+### Moving to the desired destination (AR tag) with the colored object
+
+This step primarily uses the same three functions as moving to pick up the baton. ``image_callback`` and ``scan_callback`` set the horizontal and distance error values to the AR tag, and the robot uses a proportional control mechanism to steer directly toward the tracked object.
+
+### Putting the colored object back down at the desired destination
+
+TODO: Not yet implemented
+
+## Challenges
+
+Describe the challenges you faced and how you overcame them.
+The first challenge that we faced was deciding on the structure of the entire codebase - how should the components be structured and how should they communicate with each other. For the high-level structure, we opted for our ``action_publisher`` and ``robot_controller`` set up, where the ``action_publisher`` interacts with the q-matrix to figure out what high-level actions need to be taken, it sends them to the ``robot_controller``, and awaits a confirmation before proceeding. The ``robot controller`` handles all of the lower-level perception and movement requirements of the robot.
+
+We had to make these kinds of architecture decisions again within ``robot_controller``, and opted for a configuration in which the ``camera_callback`` and ``scan_callback`` functions update global error variables, which are used by a seperate movement function to determine how the robot should behave.
+
+TODO: Arm-related challenges
+
+## Future Work
+
+Future work (1 paragraph): If you had more time, how would you improve your implementation?
+The color-only method for determining horizontal error is pretty limited, and a combination of image analysis and a more complex scanner-based object detection could be much more effective for detecting the batons.
+
+TODO: Arm-related future work
+
+## Takeaways
+
+- Takeaway 1 - A project like this one that has one large python file which contains most of the work for this project can be very difficult to divide up among teammates. Many of the steps of this project felt sequential, like it's hard to develop each one without its precoursor, which made it difficult for us to work simultaneously. It could have been very valuable for us to figure out how certain components could have been developed and tested seperately from the whole.
+- Takeaway 2 - TODO
+
+## How to Use
+
+You need to open 5 terminals when executing this on a physical robot.
+
+1. ``roscore``
+2. ssh into robot and run ``bringup``
+3. ssh into robot and run ``bringup_cam``
+4. run ``rosrun image_transport republish compressed in:=raspicam_node/image raw out:=camera/rgb/image_raw``
+5. run ``roslaunch q_learning_project action.launch``

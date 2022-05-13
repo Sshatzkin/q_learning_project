@@ -276,7 +276,7 @@ class RobotController(object):
         self.move_group_gripper.stop()
 
         # Lift up
-        arm_goal = [0.0, 0.0, 0.0, 0.0]
+        arm_goal = [0.0, np.radians(-23), np.radians(-33), np.radians(33)]
         self.move_group_arm.go(arm_goal, wait=True)
         self.move_group_arm.stop()
 
@@ -292,14 +292,17 @@ class RobotController(object):
         print("Placing Baton")
         rospy.sleep(3)
         # TODO : Implement placement
+        # Extend to place
         arm_goal = [0.0, np.radians(38), np.radians(-3), np.radians(-29)]
         self.move_group_arm.go(arm_goal, wait=True)
         self.move_group_arm.stop()
         
+        # Open gripper
         gripper_goal = [0.019, -0.019]
         self.move_group_gripper.go(gripper_goal, wait=True)
         self.move_group_gripper.stop()
 
+        # Move arm back to neutral
         arm_goal = [0.0, 0.0, 0.0, 0.0]
         self.move_group_arm.go(arm_goal, wait=True)
         self.move_group_arm.stop()

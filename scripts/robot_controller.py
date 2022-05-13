@@ -10,6 +10,7 @@ from std_msgs.msg import Bool
 from sensor_msgs.msg import Image,LaserScan
 from geometry_msgs.msg import Twist, Vector3
 from q_learning_project.msg import QMatrix, QLearningReward, RobotMoveObjectToTag, QMatrixRow
+import moveit_commander
 
 
 def convert_hsv (h, s, v):
@@ -56,6 +57,9 @@ class RobotController(object):
 
         # subscribe to the reward received from the reward node
         rospy.Subscriber("/q_learning/robot_action", RobotMoveObjectToTag, self.action_recieved)
+
+        self.move_group_arm = moveit_commander.MoveGroupCommander("arm")
+        self.move_group_gripper = moveit_commander.MoveGroupCommander("gripper")
 
         # --- Initialize Movement ---
         self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
@@ -194,7 +198,7 @@ class RobotController(object):
     def update_movement(self):
         #print("Horizontal Error: ", self.horizontal_error)
         #print("Distance Error: ", self.distance_error)
-        if self.current_target_type != None:
+        if self.current_target_type != None: # and self.arrived_at_target_counter <= 120:
             # If can see target (cam), turn toward it
             if (self.target_in_view):
                 turn_speed = (- self.horizontal_error) * 0.4
@@ -206,7 +210,7 @@ class RobotController(object):
 
             # If target in center, approach
             if (self.target_in_view and self.horizontal_error < 0.1):
-                forward_speed = self.distance_error * 0.5
+                forward_speed = (self.distance_error + 0.021) * 0.5
                 self.twist.linear.x = forward_speed
 
             # If centered and close, increment distance
@@ -247,8 +251,35 @@ class RobotController(object):
 
     def pick_up_baton(self):
         print("Picking up baton")
-        rospy.sleep(3)
+        # rospy.sleep(3)
         # TODO: Implement pickup
+        # Move arm back
+        arm_goal = [0.0, np.radians(-93), np.radians(62), np.radians(33)]
+        self.move_group_arm.go(arm_goal, wait=True)
+        self.move_group_arm.stop()
+
+        # Open gripper
+        gripper_goal = [0.019, -0.019]
+        self.move_group_gripper.go(gripper_goal, wait=True)
+        self.move_group_gripper.stop()
+
+        # Stretch arm out to grab 
+        arm_goal = [0.0, np.radians(38), np.radians(-3), np.radians(-29)]
+        self.move_group_arm.go(arm_goal, wait=True)
+        self.move_group_arm.stop()
+        # Move forward to avoid bumping dumbbell in gazebo
+        rospy.sleep(1)
+
+        # Grab dumbbell
+        gripper_goal = [-0.008, 0.008]
+        self.move_group_gripper.go(gripper_goal, wait=True)
+        self.move_group_gripper.stop()
+
+        # Lift up
+        arm_goal = [0.0, 0.0, 0.0, 0.0]
+        self.move_group_arm.go(arm_goal, wait=True)
+        self.move_group_arm.stop()
+
         print("Current Action: ", self.current_action)
         self.current_target_type = "artag"
         self.current_target = self.current_action.tag_id
@@ -261,6 +292,22 @@ class RobotController(object):
         print("Placing Baton")
         rospy.sleep(3)
         # TODO : Implement placement
+        arm_goal = [0.0, np.radians(38), np.radians(-3), np.radians(-29)]
+        self.move_group_arm.go(arm_goal, wait=True)
+        self.move_group_arm.stop()
+        
+        gripper_goal = [0.019, -0.019]
+        self.move_group_gripper.go(gripper_goal, wait=True)
+        self.move_group_gripper.stop()
+
+        arm_goal = [0.0, 0.0, 0.0, 0.0]
+        self.move_group_arm.go(arm_goal, wait=True)
+        self.move_group_arm.stop()
+
+        gripper_goal = [0, 0]
+        self.move_group_gripper.go(gripper_goal, wait=True)
+        self.move_group_gripper.stop()
+
         self.holding_item = False
         self.arrived_at_target_counter = 0
         self.target_in_view = False
